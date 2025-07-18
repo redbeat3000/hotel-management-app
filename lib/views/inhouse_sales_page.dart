@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
+import '../models/inhouse_sale_model.dart';
+import '../services/db_service.dart';
 import '../providers/sales_provider.dart';
 
 class InhouseSalesPage extends ConsumerStatefulWidget {
@@ -15,11 +19,20 @@ class _InhouseSalesPageState extends ConsumerState<InhouseSalesPage> {
   final _quantityController = TextEditingController();
   final _priceController = TextEditingController();
 
-  void _submitSale() {
+  void _submitSale() async {
     if (_formKey.currentState!.validate()) {
       final itemName = _itemController.text.trim();
       final quantity = int.tryParse(_quantityController.text.trim()) ?? 1;
       final price = double.tryParse(_priceController.text.trim()) ?? 0.0;
+
+      final newSale = InhouseSaleModel(
+        item: itemName,
+        quantity: quantity,
+        unitPrice: price,
+        date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+      );
+
+      await DBService().insertInhouseSale(newSale); // ✅ Save to DB
 
       ref
           .read(salesProvider.notifier)

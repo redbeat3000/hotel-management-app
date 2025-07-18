@@ -1,7 +1,9 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+
 import '../models/user_model.dart';
 import '../models/attendance_model.dart';
+import '../models/inhouse_sale_model.dart'; // ✅ NEW
 
 class DBService {
   static final DBService _instance = DBService._internal();
@@ -35,19 +37,31 @@ class DBService {
             password TEXT,
             role TEXT,
             lastLogin TEXT,
-            paymentType TEXT,         -- 'wage' or 'salary'
-            dailyRate REAL,           -- daily wage (nullable)
-            monthlySalary REAL        -- fixed salary (nullable)
+            paymentType TEXT,
+            dailyRate REAL,
+            monthlySalary REAL
           )
         ''');
 
         await db.execute('''
-          CREATE TABLE attendance (
+     CREATE TABLE sales (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  item TEXT,
+  quantity INTEGER,
+  price REAL,
+  isDelivery INTEGER,
+  staffId INTEGER, -- NEW
+  timestamp TEXT
+        )
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE inhouse_sales (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            staffId INTEGER,
-            checkInTime TEXT,
-            checkOutTime TEXT,
-            duration TEXT,
+            item TEXT,
+            quantity INTEGER,
+            unitPrice REAL,
             date TEXT
           )
         ''');
@@ -138,5 +152,28 @@ class DBService {
     final db = await database;
     final result = await db.query('attendance');
     return result.map((e) => AttendanceModel.fromMap(e)).toList();
+  }
+
+  // -------------------- In-House Sales Methods --------------------
+
+  Future<int> insertInhouseSale(InhouseSaleModel sale) async {
+    final db = await database;
+    return await db.insert('inhouse_sales', sale.toMap());
+  }
+
+  Future<List<InhouseSaleModel>> getAllInhouseSales() async {
+    final db = await database;
+    final result = await db.query('inhouse_sales');
+    return result.map((e) => InhouseSaleModel.fromMap(e)).toList();
+  }
+
+  Future<List<InhouseSaleModel>> getInhouseSalesByDate(String date) async {
+    final db = await database;
+    final result = await db.query(
+      'inhouse_sales',
+      where: 'date = ?',
+      whereArgs: [date],
+    );
+    return result.map((e) => InhouseSaleModel.fromMap(e)).toList();
   }
 }
